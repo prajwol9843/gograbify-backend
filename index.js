@@ -1,1 +1,1 @@
-remove index.js
+delete index.js
