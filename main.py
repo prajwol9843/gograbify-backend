@@ -1,8 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from yt_dlp import YoutubeDL
-from fastapi.responses import StreamingResponse
-import io
 
 app = FastAPI()
 
@@ -19,17 +17,18 @@ def read_root():
 
 @app.get("/download")
 def download_video(url: str):
-    ydl_opts = {
-        'format': 'bestvideo+bestaudio/best',
-        'outtmpl': '-',
-        'quiet': True
-    }
+    try:
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'format': 'best',
+            'outtmpl': '/tmp/%(title)s.%(ext)s'  # Save file to /tmp directory
+        }
 
-    buffer = io.BytesIO()
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            title = info.get('title', 'video')
+            return {"message": f"✅ Downloaded video: {title}"}
 
-    with YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=False)
-        title = info.get('title', 'video').replace(" ", "_")
-        ydl.download([url])
-
-    return {"message": f"Downloaded video: {title}"}
+    except Exception as e:
+        return {"error": str(e)}
